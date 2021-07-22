@@ -11,7 +11,8 @@
     "lint": "eslint src/ --ext .js --fix",
     "watch": "cross-env NODE_ENV=development webpack --watch --progress --config config/webpack.config.dev.js",
     "debug": "nodemon --inspect=9229 ./dist/server.bundle.js",
-    "start": "npm-run-all -p watch debug"
+    "start": "npm-run-all -p watch debug",
+    "lint:staged": "lint-staged -c ./.husky/lintstagedrc.js"
   },
   "keywords": [],
   "author": "brian@toimc.com",
@@ -58,7 +59,7 @@
     "eslint-plugin-promise": "^5.1.0",
     "eslint-plugin-standard": "^4.0.1",
     "husky": "^7.0.1",
-    "lint-staged": "^10.0.9",
+    "lint-staged": "^11.1.0",
     "nodemon": "^2.0.12",
     "npm-run-all": "^4.1.5",
     "rimraf": "^3.0.2",
@@ -67,10 +68,5 @@
     "webpack-cli": "^4.7.2",
     "webpack-merge": "^5.8.0",
     "webpack-node-externals": "^3.0.0"
-  },
-  "lint-staged": {
-    "*.js": [
-      "npm run lint"
-    ]
   }
 }
