@@ -1,7 +1,7 @@
 import Post from '../model/Post'
 import Links from '../model/Links'
 import fs from 'fs'
-import uuid from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import moment from 'dayjs'
 import config from '@/config'
 // method1
@@ -17,7 +17,6 @@ class ContentController {
   // 获取文章列表
   async getPostList (ctx) {
     const body = qs.parse(ctx.query)
-
     const sort = body.sort ? body.sort : 'created'
     const page = body.page ? parseInt(body.page) : 0
     const limit = body.limit ? parseInt(body.limit) : 20
@@ -89,7 +88,7 @@ class ContentController {
     await mkdir(dir)
     // 存储文件到指定的路径
     // 给文件一个唯一的名称
-    const picname = uuid()
+    const picname = uuidv4()
     const destPath = `${dir}/${picname}.${ext}`
     const reader = fs.createReadStream(file.path)
     const upStream = fs.createWriteStream(destPath)

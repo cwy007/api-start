@@ -4,7 +4,7 @@ import User from '../model/User'
 import UserCollect from '../model/UserCollect'
 import moment from 'dayjs'
 import send from '@/config/MailConfig'
-import uuid from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 import jwt from 'jsonwebtoken'
 import config from '@/config'
 import { setValue, getValue } from '@/config/RedisConfig'
@@ -152,7 +152,7 @@ class UserController {
         }
         return
       }
-      const key = uuid()
+      const key = uuidv4()
       setValue(
         key,
         jwt.sign({ _id: obj._id }, config.JWT_SECRET, {
@@ -176,7 +176,7 @@ class UserController {
     }
 
     const arr = ['username', 'mobile', 'password']
-    arr.map(item => {
+    arr.forEach(item => {
       delete body[item]
     })
     const result = await User.updateOne({ _id: obj._id }, body)
@@ -487,7 +487,7 @@ class UserController {
     const result = await user.save()
     const userObj = result.toJSON()
     const arr = ['password']
-    arr.map(item => {
+    arr.forEach(item => {
       delete userObj[item]
     })
     if (result) {

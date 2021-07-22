@@ -47,11 +47,13 @@ const middleware = compose([
   jwt,
   auth,
   errorHandle,
-  config.isDevMode ? log4js.koaLogger(log4js.getLogger('http'), {
-    level: 'auto'
-  }) : log4js.koaLogger(log4js.getLogger('access'), {
-    level: 'auto'
-  })
+  config.isDevMode
+    ? log4js.koaLogger(log4js.getLogger('http'), {
+      level: 'auto'
+    })
+    : log4js.koaLogger(log4js.getLogger('access'), {
+      level: 'auto'
+    })
 ])
 
 if (!config.isDevMode) {

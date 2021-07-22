@@ -64,7 +64,8 @@ export default async (ctx, next) => {
         code: 500,
         msg: err.message
       }, process.env.NODE_ENV === 'development'
-        ? { stack: err.stack } : {})
+        ? { stack: err.stack }
+        : {})
       // console.log(err.stack);
     }
   }

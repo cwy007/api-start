@@ -8,7 +8,7 @@ import User from '@/model/User'
 import SignRecord from '../model/SignRecord'
 import { getValue, setValue } from '@/config/RedisConfig'
 import { getJWTPayload } from '../common/Utils'
-import uuid from 'uuid/v4'
+import { v4 as uuidv4 } from 'uuid'
 class LoginController {
   // 忘记密码，发送邮件
   async forget (ctx) {
@@ -22,7 +22,7 @@ class LoginController {
       return
     }
     try {
-      const key = uuid()
+      const key = uuidv4()
       setValue(
         key,
         jsonwebtoken.sign({ _id: user._id }, config.JWT_SECRET, {
@@ -81,7 +81,7 @@ class LoginController {
         // 验证通过，返回Token数据
         const userObj = user.toJSON()
         const arr = ['password', 'username']
-        arr.map((item) => {
+        arr.forEach((item) => {
           delete userObj[item]
         })
         const token = jsonwebtoken.sign({ _id: userObj._id }, config.JWT_SECRET, {
