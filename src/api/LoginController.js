@@ -3,12 +3,31 @@ import bcrypt from 'bcrypt'
 import moment from 'dayjs'
 import jsonwebtoken from 'jsonwebtoken'
 import config from '@/config'
-import { checkCode } from '@/common/Utils'
+import { checkCode, generateToken } from '@/common/Utils'
 import User from '@/model/User'
 import SignRecord from '../model/SignRecord'
 import { getValue, setValue } from '@/config/RedisConfig'
 import { getJWTPayload } from '../common/Utils'
 import { v4 as uuidv4 } from 'uuid'
+import { wxGetUserInfo } from '../common/WxUtils'
+
+const addSign = async (user) => {
+  const userObj = user.toJSON()
+  const signRecord = await SignRecord.findByUid(userObj._id)
+  if (signRecord !== null) {
+    if (moment(signRecord.created).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
+      userObj.isSign = true
+    } else {
+      userObj.isSign = false
+    }
+    userObj.lastSign = signRecord.created
+  } else {
+    // 用户无签到记录
+    userObj.isSign = false
+  }
+  return userObj
+}
+
 class LoginController {
   // 忘记密码，发送邮件
   async forget (ctx) {
@@ -79,27 +98,14 @@ class LoginController {
       // mongoDB查库
       if (checkUserPasswd) {
         // 验证通过，返回Token数据
-        const userObj = user.toJSON()
+        const userObj = addSign(user)
         const arr = ['password', 'username']
         arr.forEach((item) => {
           delete userObj[item]
         })
-        const token = jsonwebtoken.sign({ _id: userObj._id }, config.JWT_SECRET, {
-          expiresIn: '1d'
-        })
+        const token = generateToken({ _id: userObj._id })
         // 加入isSign属性
-        const signRecord = await SignRecord.findByUid(userObj._id)
-        if (signRecord !== null) {
-          if (moment(signRecord.created).format('YYYY-MM-DD') === moment().format('YYYY-MM-DD')) {
-            userObj.isSign = true
-          } else {
-            userObj.isSign = false
-          }
-          userObj.lastSign = signRecord.created
-        } else {
-          // 用户无签到记录
-          userObj.isSign = false
-        }
+
         ctx.body = {
           code: 200,
           data: userObj,
@@ -214,6 +220,38 @@ class LoginController {
         code: 500,
         msg: '链接已经失效'
       }
+    }
+  }
+
+  // 微信登录
+  async wxLogin (ctx) {
+  // 1.解密用户信息
+    const { body } = ctx.request
+    // console.log('🚀 ~ file: LoginController.js ~ line 223 ~ LoginController ~ wxLogin ~ body', body)
+    const { user, code } = body
+    if (!code) {
+      ctx.body = {
+        code: 500,
+        data: '没有足够参数'
+      }
+      return
+    }
+    const res = await wxGetUserInfo(user, code)
+    if (res.errcode === 0) {
+    // 2.查询数据库 -> 判断用户是否存在
+    // 3.如果不存在 —> 创建用户
+    // 4.如果存在 -> 获取用户信息
+      const tmpUser = await User.findOrCreateByUnionid(res)
+      // 5.产生token，获取用户的签到状态
+      const token = generateToken({ _id: tmpUser._id })
+      const userInfo = await addSign(tmpUser)
+      ctx.body = {
+        code: 200,
+        data: userInfo,
+        token
+      }
+    } else {
+      ctx.throw(501, res.errcode === 40163 ? 'code已失效，请刷新后重试' : '获取用户信息失败，请重试')
     }
   }
 }

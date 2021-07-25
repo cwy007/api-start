@@ -1,5 +1,19 @@
 import mongoose from '@/config/DBHelpler'
 
+const rand = (len = 8) => {
+  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let text = ''
+  for (let i = 0; i < len; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length))
+  }
+  return text
+}
+
+const getTempName = () => {
+  // 返回用户邮箱
+  return 'toimc_' + rand() + '@toimc.com'
+}
+
 const Schema = mongoose.Schema
 
 const UserSchema = new Schema({
@@ -39,6 +53,27 @@ UserSchema.post('save', function (error, doc, next) {
 })
 
 UserSchema.statics = {
+  findOrCreateByUnionid: function (user) {
+    return this.findOne({
+      unionid: user.unionid
+    // openid: user.openid
+    }, {
+      unionid: 0, password: 0
+    }).then(obj => {
+      return (
+        obj || this.create({
+          openid: user.openid,
+          unionid: user.unionid,
+          username: getTempName(),
+          name: user.nickName,
+          roles: ['user'],
+          gender: user.gender,
+          pic: user.avatarUrl,
+          location: user.city
+        })
+      )
+    })
+  },
   findByID: function (id) {
     return this.findOne(
       { _id: id },

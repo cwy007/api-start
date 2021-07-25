@@ -59,7 +59,7 @@ const middleware = compose([
 if (!config.isDevMode) {
   app.use(compress())
 }
-console.log(config.baseUrl)
+// console.log(config.baseUrl)
 app.use(middleware)
 app.use(router())
 
