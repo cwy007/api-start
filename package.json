@@ -9,9 +9,7 @@
     "build:dev": "cross-env NODE_ENV=development webpack --config config/webpack.config.prod.js",
     "clean": "rimraf dist",
     "lint": "eslint src/ --ext .js --fix",
-    "watch": "cross-env NODE_ENV=development webpack --watch --progress --config config/webpack.config.dev.js",
-    "debug": "nodemon --inspect=9229 ./dist/server.bundle.js",
-    "start": "npm-run-all -p watch debug",
+    "start": "cross-env NODE_ENV=development webpack --watch --progress --config config/webpack.config.dev.js",
     "lint:staged": "lint-staged -c ./.husky/lintstagedrc.js"
   },
   "keywords": [],
@@ -19,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@koa/cors": "^3.1.0",
+    "axios": "^0.21.1",
     "bcrypt": "^5.0.1",
     "bluebird": "^3.7.2",
     "dayjs": "^1.10.6",
@@ -61,7 +60,7 @@
     "husky": "^7.0.1",
     "lint-staged": "^11.1.0",
     "nodemon": "^2.0.12",
-    "npm-run-all": "^4.1.5",
+    "nodemon-webpack-plugin": "^4.5.2",
     "rimraf": "^3.0.2",
     "terser-webpack-plugin": "^5.1.4",
     "webpack": "^5.45.1",
