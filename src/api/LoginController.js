@@ -6,10 +6,11 @@ import config from '@/config'
 import { checkCode, generateToken } from '@/common/Utils'
 import User from '@/model/User'
 import SignRecord from '../model/SignRecord'
-import { getValue, setValue } from '@/config/RedisConfig'
+import { getValue, setValue, delValue } from '@/config/RedisConfig'
 import { getJWTPayload } from '../common/Utils'
 import { v4 as uuidv4 } from 'uuid'
-import { wxGetUserInfo } from '../common/WxUtils'
+import { wxGetUserInfo, wxGetOpenData } from '../common/WxUtils'
+import WXBizDataCrypt from '../common/WXBizDataCrypt'
 
 const addSign = async (user) => {
   const userObj = user.toJSON()
@@ -227,7 +228,6 @@ class LoginController {
   async wxLogin (ctx) {
   // 1.解密用户信息
     const { body } = ctx.request
-    // console.log('🚀 ~ file: LoginController.js ~ line 223 ~ LoginController ~ wxLogin ~ body', body)
     const { user, code } = body
     if (!code) {
       ctx.body = {
@@ -252,6 +252,57 @@ class LoginController {
       }
     } else {
       ctx.throw(501, res.errcode === 40163 ? 'code已失效，请刷新后重试' : '获取用户信息失败，请重试')
+    }
+  }
+
+  // 获取用户手机号
+  async getMobile (ctx) {
+    const { body } = ctx.request
+    const { code, encryptedData, iv } = body
+    if (!code) {
+      ctx.body = {
+        code: 500,
+        data: '没有足够参数'
+      }
+      return
+    }
+    const { session_key: sessionKey } = await wxGetOpenData(code)
+    const wxBizDataCrypt = new WXBizDataCrypt(config.AppID, sessionKey)
+    // 3.用户加密数据的解密
+    const data = wxBizDataCrypt.decryptData(encryptedData, iv)
+    ctx.body = {
+      code: 200,
+      data,
+      msg: '获取手机号成功'
+    }
+  }
+
+  // 手机号登录
+  async loginByPhone (ctx) {
+    const { body } = ctx.request
+    // mobile + code
+    const { mobile, code } = body
+    // 验证手机号与短信验证码的正确性
+    const sms = await getValue(mobile)
+    if (sms && sms === code) {
+      await delValue(mobile)
+      // 查询并创建用户
+      const user = await User.findOrCreateByMobile({
+        mobile
+      })
+      // 查看用户是否签到
+      const userObj = await addSign(user)
+      // 响应用户
+      ctx.body = {
+        code: 200,
+        token: generateToken({ _id: userObj._id }),
+        data: userObj
+      }
+    } else {
+      ctx.body = {
+        code: 500,
+        msg: '手机号与验证码不匹配'
+      }
     }
   }
 }

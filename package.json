@@ -37,6 +37,7 @@
     "make-dir": "^3.1.0",
     "mongoose": "^5.13.3",
     "nodemailer": "^6.6.3",
+    "qcloudsms_js": "^0.1.1",
     "qs": "^6.10.1",
     "redis": "^3.1.2",
     "saslprep": "^1.0.3",

@@ -74,6 +74,18 @@ UserSchema.statics = {
       )
     })
   },
+  findOrCreateByMobile: function (user) {
+    return this.findOne({ mobile: user.mobile }, {
+      unionid: 0, password: 0
+    }).then(res => {
+      return res || this.create({
+        mobile: user.mobile,
+        username: getTempName(),
+        name: getTempName(),
+        roles: ['user']
+      })
+    })
+  },
   findByID: function (id) {
     return this.findOne(
       { _id: id },

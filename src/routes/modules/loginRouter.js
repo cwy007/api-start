@@ -21,4 +21,10 @@ router.post('/reset', loginController.reset)
 // 微信登录
 router.post('/wxLogin', loginController.wxLogin)
 
+// 手机登录
+router.post('/loginByPhone', loginController.loginByPhone)
+
+// 获取用户手机号
+router.post('/getMobile', loginController.getMobile)
+
 export default router

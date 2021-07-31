@@ -1,10 +1,11 @@
 import svgCaptcha from 'svg-captcha'
-import { setValue } from '@/config/RedisConfig'
+import { setValue, getValue } from '@/config/RedisConfig'
 import moment from 'dayjs'
 import Post from '@/model/Post'
 import Comments from '../model/Comments'
 import User from '@/model/User'
 import SignRecord from '@/model/SignRecord'
+import sendSms from '@/common/Phone'
 
 class PublicController {
   // 获取图片验证码
@@ -96,6 +97,35 @@ class PublicController {
       data: result,
       total,
       msg: '获取签到排行成功'
+    }
+  }
+
+  // 发送手机验证码
+  async sendCode (ctx) {
+  // 1.获取手机号 phone
+    const { mobile } = ctx.query
+    // 2.查询redis -> 判断是否验证码过期
+    if (await getValue(mobile)) {
+      ctx.body = {
+        code: 501,
+        msg: '短信正在发送中，请勿重新发送'
+      }
+      return
+    }
+    // 3.产生随机的6位数字
+    const sms = String(Math.random()).slice(-6)
+    // 4.发送短信 -> 设置redis -> sms, expire -> key:phone
+    const res = await sendSms(mobile, sms)
+    if (res.result === 0) {
+      setValue(mobile, sms, 10 * 60)
+      // 5.响应
+      ctx.body = {
+        code: 200,
+        msg: '发送成功',
+        data: res
+      }
+    } else {
+      ctx.throw(500, '发送短信失败' + res.errmsg || '')
     }
   }
 }

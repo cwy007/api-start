@@ -11,6 +11,9 @@ router.prefix('/public')
 // 获取图片验证码
 router.get('/getCaptcha', publicController.getCaptcha)
 
+// 发送手机短信验证码
+router.get('/sendCode', publicController.sendCode)
+
 // 获取文章列表
 router.get('/list', contentController.getPostList)
 
