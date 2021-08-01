@@ -5,6 +5,7 @@ const Schema = mongoose.Schema
 const CommentsSchema = new Schema({
   // 'cid': { type: String},
   cid: { type: String, ref: 'comments' },
+  huid: { type: String, ref: 'users' }, // 被点赞用户的id
   uid: { type: String, ref: 'users' },
   created: { type: Date }
 })
@@ -29,8 +30,8 @@ CommentsSchema.statics = {
   getHandsByUid: function (id, page, limit) {
     return this.find({ uid: id })
       .populate({
-        path: 'uid',
-        select: '_id name'
+        path: 'huid',
+        select: '_id name pic'
       })
       .populate({
         path: 'cid',

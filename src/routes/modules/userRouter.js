@@ -2,6 +2,7 @@ import Router from 'koa-router'
 import userController from '../../api/UserController'
 import contentController from '@/api/ContentController'
 import errorController from '@/api/ErrorController'
+import statisticsController from '@/api/StatisticsController'
 
 const router = new Router()
 
@@ -39,5 +40,8 @@ router.get('/setmsg', userController.setMsg)
 
 // 保存错误日志
 router.post('/addError', errorController.addError)
+
+// 微信个人中心统计数字
+router.get('/wxUserCount', statisticsController.wxUserCount)
 
 export default router

@@ -158,6 +158,12 @@ UserSchema.statics = {
   },
   getTotalSignCount: function (page, limit) {
     return this.find({}).countDocuments()
+  },
+  getFavs: function (uid) {
+    // 查询用户积分
+    return this.findOne({ _id: uid }, { favs: 1 }).then((res) => {
+      return res.favs
+    })
   }
 }
 

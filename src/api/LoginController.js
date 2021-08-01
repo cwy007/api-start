@@ -99,7 +99,7 @@ class LoginController {
       // mongoDB查库
       if (checkUserPasswd) {
         // 验证通过，返回Token数据
-        const userObj = addSign(user)
+        const userObj = await addSign(user)
         const arr = ['password', 'username']
         arr.forEach((item) => {
           delete userObj[item]
