@@ -12,6 +12,7 @@ import User from '@/model/User'
 import PostTags from '@/model/PostTags'
 import UserCollect from '../model/UserCollect'
 import qs from 'qs'
+import PostHistory from '../model/PostHistory'
 
 class ContentController {
   // 获取文章列表
@@ -251,6 +252,7 @@ class ContentController {
       if (userCollect && userCollect.tid) {
         isFav = 1
       }
+      await PostHistory.addOrUpdate(ctx._id, params.tid) // 添加浏览记录
     }
     const newPost = post.toJSON()
     newPost.isFav = isFav

@@ -241,7 +241,8 @@ class UserController {
       await UserCollect.deleteOne({ uid: obj._id, tid: params.tid })
       ctx.body = {
         code: 200,
-        msg: '取消收藏成功'
+        msg: '取消收藏成功',
+        isCollect: 0
       }
     } else {
       const newCollect = new UserCollect({
@@ -254,7 +255,8 @@ class UserController {
         ctx.body = {
           code: 200,
           data: result,
-          msg: '收藏成功'
+          msg: '收藏成功',
+          isCollect: 1
         }
       }
     }

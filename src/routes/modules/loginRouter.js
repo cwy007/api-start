@@ -27,4 +27,7 @@ router.post('/loginByPhone', loginController.loginByPhone)
 // 获取用户手机号
 router.post('/getMobile', loginController.getMobile)
 
+// refresh
+router.post('/refresh', loginController.refresh)
+
 export default router

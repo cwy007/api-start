@@ -248,7 +248,8 @@ class LoginController {
       ctx.body = {
         code: 200,
         data: userInfo,
-        token
+        token,
+        refreshToken: generateToken({ _id: tmpUser._id }, '7d')
       }
     } else {
       ctx.throw(501, res.errcode === 40163 ? 'code已失效，请刷新后重试' : '获取用户信息失败，请重试')
@@ -296,6 +297,7 @@ class LoginController {
       ctx.body = {
         code: 200,
         token: generateToken({ _id: userObj._id }),
+        refreshToken: generateToken({ _id: userObj._id }, '7d'),
         data: userObj
       }
     } else {
@@ -303,6 +305,15 @@ class LoginController {
         code: 500,
         msg: '手机号与验证码不匹配'
       }
+    }
+  }
+
+  // refreshToken
+  async refresh (ctx) {
+    ctx.body = {
+      code: 200,
+      token: generateToken({ _id: ctx._id }, '60m'),
+      msg: '获取token成功'
     }
   }
 }
