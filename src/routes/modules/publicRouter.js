@@ -53,4 +53,7 @@ router.get('/hotComments', publicController.getHotComments)
 // 获取用签到排行
 router.get('/hotSignRecord', publicController.getHotSignRecord)
 
+// 获取微信模板id
+router.get('/subids', publicController.getSubIds)
+
 export default router

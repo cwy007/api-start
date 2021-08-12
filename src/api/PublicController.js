@@ -1,11 +1,12 @@
-import svgCaptcha from 'svg-captcha'
-import { setValue, getValue } from '@/config/RedisConfig'
-import moment from 'dayjs'
-import Post from '@/model/Post'
-import Comments from '../model/Comments'
-import User from '@/model/User'
-import SignRecord from '@/model/SignRecord'
 import sendSms from '@/common/Phone'
+import config from '@/config'
+import { getValue, setValue } from '@/config/RedisConfig'
+import Post from '@/model/Post'
+import SignRecord from '@/model/SignRecord'
+import User from '@/model/User'
+import moment from 'dayjs'
+import svgCaptcha from 'svg-captcha'
+import Comments from '../model/Comments'
 
 class PublicController {
   // 获取图片验证码
@@ -126,6 +127,13 @@ class PublicController {
       }
     } else {
       ctx.throw(500, '发送短信失败' + res.errmsg || '')
+    }
+  }
+
+  async getSubIds (ctx) {
+    ctx.body = {
+      code: 200,
+      data: config.subIds
     }
   }
 }

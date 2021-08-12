@@ -1,8 +1,12 @@
 // 记录微信相关的接口， API项目 -> 微信官方服务器
-import axios from 'axios'
 import config from '@/config'
+import log4js from '@/config/Log4j'
+import { getValue, setValue } from '@/config/RedisConfig'
+import axios from 'axios'
 import crypto from 'crypto'
 import WXBizDataCrypt from './WXBizDataCrypt'
+
+const logger = log4js.getLogger('error')
 
 const instance = axios.create({
   timeout: 10000
@@ -43,5 +47,41 @@ export const wxGetUserInfo = async (user, code) => {
   } else {
     // data -> errcode非0 ，请求失败
     return data
+  }
+}
+
+// flag 强制刷新，默认false - 不强制刷新
+export const wxGetAccessToken = async (flag = false) => {
+  // https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
+  // 1.判断redis中是否有accessToken
+  // 2.有 & flag -> 则直接返回
+  // 3.没有 -> 请求新的token
+  let accessToken = await getValue('accessToken')
+  if (!accessToken || flag) {
+    try {
+      const result = await instance.get(`https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${config.AppID}&secret=${config.AppSecret}`)
+      // console.log('🚀 ~ file: WxUtils.js ~ line 60 ~ wxGetAccessToken ~ result', result)
+      if (result.status === 200) {
+        await setValue('accessToken', result.data.access_token, result.data.expires_in)
+        accessToken = result.data.access_token
+        if (result.data.errcode && result.data.errmsg) {
+          logger.error(`wxGetAccessToken error${result.data.errcode} - ${result.data.errmsg}`)
+        }
+      }
+    } catch (error) {
+      logger.error(`wxGetAccessToken error: ${error.message}`)
+    }
+  }
+  return accessToken
+}
+
+export const wxSendMessage = async (options) => {
+  // POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCESS_TOKEN
+  let accessToken = await wxGetAccessToken()
+  try {
+    const { data } = await instance.post(`https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=${accessToken}`, options)
+    return data
+  } catch (error) {
+    logger.error(`wxSendMessage error: ${error.message}`)
   }
 }

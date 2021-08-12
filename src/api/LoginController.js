@@ -1,16 +1,16 @@
+import { checkCode, generateToken } from '@/common/Utils'
+import config from '@/config'
 import send from '@/config/MailConfig'
+import { delValue, getValue, setValue } from '@/config/RedisConfig'
+import User from '@/model/User'
 import bcrypt from 'bcrypt'
 import moment from 'dayjs'
 import jsonwebtoken from 'jsonwebtoken'
-import config from '@/config'
-import { checkCode, generateToken } from '@/common/Utils'
-import User from '@/model/User'
-import SignRecord from '../model/SignRecord'
-import { getValue, setValue, delValue } from '@/config/RedisConfig'
-import { getJWTPayload } from '../common/Utils'
 import { v4 as uuidv4 } from 'uuid'
-import { wxGetUserInfo, wxGetOpenData } from '../common/WxUtils'
+import { getJWTPayload } from '../common/Utils'
 import WXBizDataCrypt from '../common/WXBizDataCrypt'
+import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from '../common/WxUtils'
+import SignRecord from '../model/SignRecord'
 
 const addSign = async (user) => {
   const userObj = user.toJSON()
@@ -226,7 +226,8 @@ class LoginController {
 
   // 微信登录
   async wxLogin (ctx) {
-  // 1.解密用户信息
+    console.log(process.env.NODE_ENV)
+    // 1.解密用户信息
     const { body } = ctx.request
     const { user, code } = body
     if (!code) {
@@ -242,6 +243,24 @@ class LoginController {
     // 3.如果不存在 —> 创建用户
     // 4.如果存在 -> 获取用户信息
       const tmpUser = await User.findOrCreateByUnionid(res)
+      // 推送消息
+      // 字段限制：https://developers.weixin.qq.com/miniprogram/dev/api-backend/open-api/subscribe-message/subscribeMessage.send.html
+      const notify = await wxSendMessage({
+        touser: tmpUser.openid,
+        template_id: 'FSQZganmBgaRRoNNlelQ1Qm2u4gx6pVSt69EJfkLbPA',
+        data: {
+          phrase1: {
+            value: '登录安全'
+          },
+          date2: {
+            value: moment().format('YYYY年MM月DD HH:mm')
+          },
+          thing4: {
+            value: '通过微信授权登录成功，请注意信息安全'
+          }
+        },
+        miniprogram_state: process.env.NODE_ENV === 'development' ? 'developer' : 'formal'
+      })
       // 5.产生token，获取用户的签到状态
       const token = generateToken({ _id: tmpUser._id })
       const userInfo = await addSign(tmpUser)
@@ -249,7 +268,8 @@ class LoginController {
         code: 200,
         data: userInfo,
         token,
-        refreshToken: generateToken({ _id: tmpUser._id }, '7d')
+        refreshToken: generateToken({ _id: tmpUser._id }, '7d'),
+        notify: notify ? notify.data : ''
       }
     } else {
       ctx.throw(501, res.errcode === 40163 ? 'code已失效，请刷新后重试' : '获取用户信息失败，请重试')
