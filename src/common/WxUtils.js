@@ -4,12 +4,36 @@ import log4js from '@/config/Log4j'
 import { getValue, setValue } from '@/config/RedisConfig'
 import axios from 'axios'
 import crypto from 'crypto'
+import qs from 'qs'
 import WXBizDataCrypt from './WXBizDataCrypt'
 
 const logger = log4js.getLogger('error')
 
 const instance = axios.create({
   timeout: 10000
+})
+
+instance.interceptors.response.use(async (res) => {
+  const { data } = res
+  if (data.errcode === 40001) {
+    // 重新获取新的accessToken
+    const accessToken = await wxGetAccessToken(true)
+    const { url } = res.config
+    // 重新发起请求 -> res
+    if (url.indexOf('access_token') !== -1) {
+      const arr = url.split('?') // ?key=value&key1=value1... -> ['域名', 'key=value&key1=value1...']
+      const params = qs.parse(arr[1])
+      const newParams = {
+        ...params,
+        access_token: accessToken
+      }
+      const newUrl = arr[0] + '?' + qs.stringify(newParams)
+      const config = { ...res.config, url: newUrl }
+      const result = await axios(config)
+      return result
+    }
+  }
+  return res
 })
 
 // 获取session_key，openid 等OpenData数据
@@ -50,6 +74,7 @@ export const wxGetUserInfo = async (user, code) => {
   }
 }
 
+// 获取微信accessToken
 // flag 强制刷新，默认false - 不强制刷新
 export const wxGetAccessToken = async (flag = false) => {
   // https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=APPID&secret=APPSECRET
@@ -75,6 +100,7 @@ export const wxGetAccessToken = async (flag = false) => {
   return accessToken
 }
 
+// 发送订阅消息
 export const wxSendMessage = async (options) => {
   // POST https://api.weixin.qq.com/cgi-bin/message/subscribe/send?access_token=ACCESS_TOKEN
   let accessToken = await wxGetAccessToken()
@@ -83,5 +109,78 @@ export const wxSendMessage = async (options) => {
     return data
   } catch (error) {
     logger.error(`wxSendMessage error: ${error.message}`)
+  }
+}
+
+// 文本内容安全
+// content - 内容
+// title - 标题 可选
+// signature - 签名 也是可选
+export const wxMsgCheck = async (content, {
+  user: {
+    openid,
+    name: nickname,
+    remark: signature
+  },
+  scene,
+  title
+} = {
+  user: {},
+  scene: 3,
+  title: ''
+}) => {
+  // POST https://api.weixin.qq.com/wxa/msg_sec_check?access_token=ACCESS_TOKEN
+  let accessToken = await wxGetAccessToken()
+  let res
+  try {
+    // 1.过滤掉一些如Html，自定义的标签内容
+    content = content.replace(/<[^>]+>/g, '').replace(/\sface\[\S{1,}]/g, '').replace(/img\[\S+\]/g, '').replace(/\sa\(\S+\]/g, '').replace(/\[\/?quote\]/g, '').replace(/\[\/?pre\]/g, '').replace(/\[\/?hr\]/g, '').replace(/[\r\n|\n|\s]/g, '')
+    // 2.如果content内容超过了2500词，需要进行分段处理
+    if (content.length > 2500) {
+      // 分段 —> arr -> method1: for , method2: reg
+      let arr = content.match(/[\s\S]{1,2500}/g) || []
+      // 多次请求接口
+      let mulResult = []
+      for (let i = 0; i < arr.length; i++) {
+        // 获取所有接口的返回结果 -> 结果判断 -> 返回
+        res = await instance.post(`https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${accessToken}`, {
+          version: 2,
+          openid: openid || 'ooTjn5YPpogMWLtEQ_PxyUJkIp2I',
+          scene,
+          content: arr[i],
+          nickname: nickname,
+          title,
+          signature: scene === 1 ? signature : null
+        })
+        mulResult.push(res)
+      }
+      // 判断mulResult
+      console.log(mulResult)
+      const arrTemp = mulResult.filter(item => {
+        const { status, data: { errcode, result } } = item
+        return status !== 200 || errcode !== 0 || (result && result.suggest !== 'pass')
+      })
+      return !(arrTemp.length > 0)
+    } else {
+      res = await instance.post(`https://api.weixin.qq.com/wxa/msg_sec_check?access_token=${accessToken}`, {
+        version: 2,
+        openid: openid || 'ooTjn5YPpogMWLtEQ_PxyUJkIp2I',
+        scene,
+        content,
+        nickname: nickname,
+        title,
+        signature: scene === 1 ? signature : null
+      })
+      const { status, data: { errcode, result } } = res
+      if (status === 200 && errcode === 0 && result && result.suggest === 'pass') {
+        // 正常
+        return true
+      } else {
+        // 异常
+        return false
+      }
+    }
+  } catch (error) {
+    logger.error(`wxMsgCheck error: ${error.message}`)
   }
 }

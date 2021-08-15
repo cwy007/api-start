@@ -1,8 +1,13 @@
 import config from '@/config'
-import User from '@/model/User'
+import log4js from '@/config/Log4j'
 import { setValue } from '@/config/RedisConfig'
+import User from '@/model/User'
+import { wxGetAccessToken } from '../common/WxUtils'
+const logger = log4js.getLogger('out')
 
 export const run = async () => {
+  const result = await wxGetAccessToken()
+  logger.info('new accessToken: ' + result)
   if (config.adminEmail && config.adminEmail.length > 0) {
     const emails = config.adminEmail
     const arr = []
