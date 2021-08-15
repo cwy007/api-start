@@ -1,18 +1,19 @@
-import Post from '../model/Post'
-import Links from '../model/Links'
-import fs from 'fs'
-import { v4 as uuidv4 } from 'uuid'
-import moment from 'dayjs'
+import { checkCode, getJWTPayload } from '@/common/Utils'
 import config from '@/config'
+import PostTags from '@/model/PostTags'
+import User from '@/model/User'
+import moment from 'dayjs'
+import fs from 'fs'
 // method1
 // import { dirExists } from '@/common/Utils'
 import mkdir from 'make-dir'
-import { checkCode, getJWTPayload } from '@/common/Utils'
-import User from '@/model/User'
-import PostTags from '@/model/PostTags'
-import UserCollect from '../model/UserCollect'
 import qs from 'qs'
+import { v4 as uuidv4 } from 'uuid'
+import { wxImgCheck, wxMsgCheck } from '../common/WxUtils'
+import Links from '../model/Links'
+import Post from '../model/Post'
 import PostHistory from '../model/PostHistory'
+import UserCollect from '../model/UserCollect'
 
 class ContentController {
   // 获取文章列表
@@ -82,6 +83,14 @@ class ContentController {
   // 上传图片
   async uploadImg (ctx) {
     const file = ctx.request.files.file
+    const flag = await wxImgCheck(file)
+    if (!flag) {
+      ctx.body = {
+        code: 500,
+        msg: '内容安全校验失败，请检查'
+      }
+      return
+    }
     // 图片名称、图片格式、存储的位置，返回前台一可以读取的路径
     const ext = file.name.split('.').pop()
     const dir = `${config.uploadPath}/${moment().format('YYYYMMDD')}`
@@ -156,6 +165,40 @@ class ContentController {
         code: 500,
         msg: '图片验证码验证失败'
       }
+    }
+  }
+
+  // 小程序添加新贴
+  async addWxPost (ctx) {
+    const { body } = ctx.request
+    // 校验用户传递的参数与内容是否通过内容安全的校验
+    // 判断用户的积分数是否 > fav，否则，提示用户积分不足发贴
+    // 用户积分足够的时候，新建Post，减除用户对应的积分
+    const user = await User.findByID({ _id: ctx._id })
+    const flag = await wxMsgCheck(body.content || '', { user: user, title: body.title })
+    if (!flag) {
+      ctx.body = {
+        code: 500,
+        msg: '内容安全校验失败，请检查'
+      }
+      return
+    }
+    if (user.favs < body.fav) {
+      ctx.body = {
+        code: 501,
+        msg: '积分不足'
+      }
+      return
+    } else {
+      await User.updateOne({ _id: ctx._id }, { $inc: { favs: -body.fav } })
+    }
+    const newPost = new Post(body)
+    newPost.uid = ctx._id
+    const result = await newPost.save()
+    ctx.body = {
+      code: 200,
+      msg: '成功的保存的文章',
+      data: result
     }
   }
 

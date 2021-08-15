@@ -4,7 +4,14 @@ import log4js from '@/config/Log4j'
 import { getValue, setValue } from '@/config/RedisConfig'
 import axios from 'axios'
 import crypto from 'crypto'
+import del from 'del'
+import FormData from 'form-data'
+import fs, { accessSync, constants } from 'fs'
+import mkdir from 'make-dir'
+import path from 'path'
 import qs from 'qs'
+import sharp from 'sharp'
+import { v4 as uuidv4 } from 'uuid'
 import WXBizDataCrypt from './WXBizDataCrypt'
 
 const logger = log4js.getLogger('error')
@@ -172,15 +179,81 @@ export const wxMsgCheck = async (content, {
         signature: scene === 1 ? signature : null
       })
       const { status, data: { errcode, result } } = res
-      if (status === 200 && errcode === 0 && result && result.suggest === 'pass') {
-        // 正常
-        return true
-      } else {
-        // 异常
-        return false
-      }
+      return status === 200 && errcode === 0 && result && result.suggest === 'pass'
+      // if (status === 200 && errcode === 0 && result && result.suggest === 'pass') {
+      //   // 正常
+      //   return true
+      // } else {
+      //   // 异常
+      //   return false
+      // }
     }
   } catch (error) {
     logger.error(`wxMsgCheck error: ${error.message}`)
+  }
+}
+
+export const getHeaders = (form) => {
+  return new Promise((resolve, reject) => {
+    form.getLength((err, length) => {
+      if (err) {
+        reject(err)
+      }
+      const headers = Object.assign({
+        'Content-Length': length
+      }, form.getHeaders())
+      resolve(headers)
+    })
+  })
+}
+
+export const checkAndDelFile = async (path) => {
+  try {
+    accessSync(path, constants.R_OK | constants.W_OK)
+    await del(path)
+  } catch (err) {
+    // console.error('no access!')
+  }
+}
+
+// 图片内容安全
+export const wxImgCheck = async (file) => {
+  // POST https://api.weixin.qq.com/wxa/img_sec_check?access_token=ACCESS_TOKEN
+  const accessToken = await wxGetAccessToken()
+  // 1.保证图片 -> 判断分辨率 -> sharp 750 * 1334
+  let newPath = file.path
+  const tmpPath = path.resolve('./tmp')
+  try {
+    const img = sharp(newPath)
+    const meta = await img.metadata()
+    if (meta.width > 750 || meta.height > 1334) {
+      // 判断临时路径是否存在，并创建
+      await mkdir(tmpPath)
+      // uuid -> 指定临时的文件名称
+      newPath = path.join(tmpPath, uuidv4() + path.extname(newPath) || '.jpg')
+      await img.resize(750, 1334, {
+        fit: 'inside'
+      }).toFile(newPath)
+    }
+    const stream = fs.createReadStream(newPath)
+    // 2.FormData类型的数据准备
+    const form = new FormData()
+    form.append('media', stream)
+    const headers = await getHeaders(form)
+    // 3.请求接口 -> 返回结果
+    const result = await instance.post(`https://api.weixin.qq.com/wxa/img_sec_check?access_token=${accessToken}`, form, { headers })
+    // 校验成功 -> 删除tmp数据 -> 判断路径中的文件是否存在
+    console.log('🚀 ~ file: WxUtils.js ~ line 232 ~ wxImgCheck ~ result', result)
+    await checkAndDelFile(newPath)
+    return result.status === 200 && result.data && result.data.errcode === 0
+    // if (result.status === 200 && result.data && result.data.errcode === 0) {
+    //   // errcode 0 - 内容正常，否则 - 异常
+    //   return true
+    // } else {
+    //   return false
+    // }
+  } catch (error) {
+    await checkAndDelFile(newPath)
+    logger.error(`wxImgCheck error: ${error.message}`)
   }
 }
