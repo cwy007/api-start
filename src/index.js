@@ -14,11 +14,35 @@ import path from 'path'
 import './common/Cron'
 import errorHandle from './common/ErrorHandle'
 import { run } from './common/Init'
+import { getNofityByTradeNo } from './common/WxPay'
 import config from './config/index'
 import WebSocketServer from './config/WebSocket'
 import router from './routes/routes'
 const app = new Koa()
 const ws = new WebSocketServer()
+
+// "20210828004232709012623290241"
+getNofityByTradeNo('20210828004232709012623290241')
+
+// const res = getSignHeaders('https://api.mch.weixin.qq.com/v3/pay/transactions/jsapi', 'post', {
+//   appid: config.AppID,
+//   mchid: config.mchid,
+//   out_trade_no: '123123123424324',
+//   attach: '',
+//   notify_url: 'https://test1.toimc.com/public/notify',
+//   goods_tag: '',
+//   amount: {
+//     total: 1,
+//     currency: 'CNY'
+//   },
+//   payer: {
+//     openid: '123123'
+//   },
+//   detail: {},
+//   scene_info: {},
+//   settle_info: {}
+// })
+// console.log('🚀 ~ file: index.js ~ line 42 ~ res', res)
 
 ws.init()
 global.ws = ws

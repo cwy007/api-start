@@ -3,6 +3,7 @@ import publicController from '@/api/PublicController'
 import contentController from '@/api/ContentController'
 import userController from '@/api/UserController'
 import commentsController from '@/api/CommentsController'
+import adminController from '@/api/AdminController'
 
 const router = new Router()
 
@@ -55,5 +56,8 @@ router.get('/hotSignRecord', publicController.getHotSignRecord)
 
 // 获取微信模板id
 router.get('/subids', publicController.getSubIds)
+
+// 获取支付通知
+router.post('/notify', adminController.wxNotify)
 
 export default router

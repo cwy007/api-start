@@ -44,4 +44,7 @@ router.post('/addError', errorController.addError)
 // 微信个人中心统计数字
 router.get('/wxUserCount', statisticsController.wxUserCount)
 
+// 微信用户下单
+router.post('/wxOrder', userController.wxOrder)
+
 export default router

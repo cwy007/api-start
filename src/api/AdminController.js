@@ -8,6 +8,7 @@ import moment from 'dayjs'
 import { getMenuData, sortMenus, getRights } from '@/common/Utils'
 import qs from 'qs'
 // import CommentsUsers from '../model/CommentsUsers'
+import { decryptByApiV3 } from '@/common/WxPay'
 
 const weekday = require('dayjs/plugin/weekday')
 moment.extend(weekday)
@@ -145,14 +146,25 @@ class AdminController {
     // 1. 顶部的card
     const inforCardData = []
     const time = moment().format('YYYY-MM-DD 00:00:00')
-    const userNewCount = await User.find({ created: { $gte: time } }).countDocuments()
+    const userNewCount = await User.find({
+      created: { $gte: time }
+    }).countDocuments()
     const postsCount = await Post.find({}).countDocuments()
-    const commentsNewCount = await Comments.find({ created: { $gte: time } }).countDocuments()
+    const commentsNewCount = await Comments.find({
+      created: { $gte: time }
+    }).countDocuments()
     const starttime = moment(nowZero).weekday(1).format()
     const endtime = moment(nowZero).weekday(8).format()
-    const weekEndCount = await Comments.find({ created: { $gte: starttime, $lte: endtime }, isBest: '1' }).countDocuments()
-    const signWeekCount = await SignRecord.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments()
-    const postWeekCount = await Post.find({ created: { $gte: starttime, $lte: endtime } }).countDocuments()
+    const weekEndCount = await Comments.find({
+      created: { $gte: starttime, $lte: endtime },
+      isBest: '1'
+    }).countDocuments()
+    const signWeekCount = await SignRecord.find({
+      created: { $gte: starttime, $lte: endtime }
+    }).countDocuments()
+    const postWeekCount = await Post.find({
+      created: { $gte: starttime, $lte: endtime }
+    }).countDocuments()
     inforCardData.push(userNewCount)
     inforCardData.push(postsCount)
     inforCardData.push(commentsNewCount)
@@ -174,8 +186,16 @@ class AdminController {
     const startMonth = moment(nowZero).subtract(5, 'M').date(1).format()
     const endMonth = moment(nowZero).add(1, 'M').date(1).format()
     let monthData = await Post.aggregate([
-      { $match: { created: { $gte: new Date(startMonth), $lt: new Date(endMonth) } } },
-      { $project: { month: { $dateToString: { format: '%Y-%m', date: '$created' } } } },
+      {
+        $match: {
+          created: { $gte: new Date(startMonth), $lt: new Date(endMonth) }
+        }
+      },
+      {
+        $project: {
+          month: { $dateToString: { format: '%Y-%m', date: '$created' } }
+        }
+      },
       { $group: { _id: '$month', count: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ])
@@ -190,7 +210,11 @@ class AdminController {
     const _aggregate = async (model) => {
       let result = await model.aggregate([
         { $match: { created: { $gte: new Date(startDay) } } },
-        { $project: { month: { $dateToString: { format: '%Y-%m-%d', date: '$created' } } } },
+        {
+          $project: {
+            month: { $dateToString: { format: '%Y-%m-%d', date: '$created' } }
+          }
+        },
         { $group: { _id: '$month', count: { $sum: 1 } } },
         { $sort: { _id: 1 } }
       ])
@@ -209,7 +233,11 @@ class AdminController {
     // {user: [1,2,3,4,0,0,0]}
     const dataArr = []
     for (let i = 0; i <= 6; i++) {
-      dataArr.push(moment().subtract(6 - i, 'day').format('YYYY-MM-DD'))
+      dataArr.push(
+        moment()
+          .subtract(6 - i, 'day')
+          .format('YYYY-MM-DD')
+      )
     }
     const addData = (obj) => {
       const arr = []
@@ -242,7 +270,7 @@ class AdminController {
 
   async getCommentsAll (ctx) {
     const params = qs.parse(ctx.query)
-    let options = { }
+    let options = {}
     if (params.options) {
       options = params.options
     }
@@ -285,6 +313,29 @@ class AdminController {
       code: 200,
       msg: '删除成功',
       data: result
+    }
+  }
+
+  // 微信支付回调通知
+  async wxNotify (ctx) {
+    const { body } = ctx.request
+    const { resource_type: type, resource } = body
+    if (type === 'encrypt-resource') {
+      const { ciphertext, associated_data: associate, nonce } = resource
+      const str = decryptByApiV3({
+        associate,
+        nonce,
+        ciphertext
+      })
+      console.log('🚀 ~ file: AdminController.js ~ line 326 ~ AdminController ~ wxNotify ~ str', str)
+      // todo 入库，并修改订单的支付成功的状态
+    }
+    console.log(
+      '🚀 ~ file: AdminController.js ~ line 294 ~ AdminController ~ wxNotify ~ body',
+      body
+    )
+    ctx.body = {
+      code: 200
     }
   }
 }

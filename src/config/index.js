@@ -16,15 +16,28 @@ const REDIS = {
   password: process.env.REDIS_PASS || 'OUlMsFxOSa6r77s1'
 }
 
-const JWT_SECRET = '&Vi%33pG2mD51xMo%OUOTo$ZWOa3TYt328tcjXtW9&hn%AOb9quwaZaRMf#f&44c'
+const JWT_SECRET =
+  '&Vi%33pG2mD51xMo%OUOTo$ZWOa3TYt328tcjXtW9&hn%AOb9quwaZaRMf#f&44c'
 
-const baseUrl = process.env.NODE_ENV === 'production' ? 'http://front.dev.toimc.com:22500' : 'http://localhost:8080'
+const baseUrl =
+  process.env.NODE_ENV === 'production'
+    ? 'http://front.dev.toimc.com:22500'
+    : 'http://localhost:8080'
 
-const uploadPath = process.env.NODE_ENV === 'production' ? '/app/public' : path.join(path.resolve(__dirname), '../../public')
+const uploadPath =
+  process.env.NODE_ENV === 'production'
+    ? '/app/public'
+    : path.join(path.resolve(__dirname), '../../public')
 
 const adminEmail = ['1322928787@qq.com']
 
-const publicPath = [/^\/public/, /^\/login/, /^\/content/, /^\/user/, /^\/comments/]
+const publicPath = [
+  /^\/public/,
+  /^\/login/,
+  /^\/content/,
+  /^\/user/,
+  /^\/comments/
+]
 
 const isDevMode = process.env.NODE_ENV !== 'production'
 
@@ -41,6 +54,12 @@ const subIds = {
   fav: 'g9FFU43_deHRuez-2FcrASorTSITsJJPYx-GhzvHEIU'
 }
 
+const mchid = 'your mchid'
+
+const serialNo = 'your serialNo'
+
+const apiV3Key = 'your api key'
+
 export default {
   DB_NAME,
   MONGO_HOSTNAME,
@@ -56,5 +75,8 @@ export default {
   wsPort,
   AppID,
   AppSecret,
-  subIds
+  subIds,
+  mchid,
+  serialNo,
+  apiV3Key
 }

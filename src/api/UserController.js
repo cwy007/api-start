@@ -12,6 +12,7 @@ import bcrypt from 'bcrypt'
 import Comments from '@/model/Comments'
 import qs from 'qs'
 import CommentsHands from '@/model/CommentsHands'
+import { rsaSign, wxJSPAY } from '@/common/WxPay'
 class UserController {
   // 用户签到接口
   async userSign (ctx) {
@@ -502,6 +503,38 @@ class UserController {
       ctx.body = {
         code: 500,
         msg: '服务接口异常'
+      }
+    }
+  }
+
+  async wxOrder (ctx) {
+    const { body } = ctx.request
+    // 为什么订单的total即商品的金额信息不能从前端传？
+    // 从前端传商品的id -> 在后端查询对应id的商品价格
+    const { description, total } = body
+    const user = await User.findByID(ctx._id)
+    const params = {
+      description,
+      total,
+      user
+    }
+    // 1. 发起wxPay -> prepay_id
+    const { prepayId, nonceStr, timestamp } = await wxJSPAY(params)
+    // 小程序appId
+    // 时间戳
+    // 随机字符串
+    // 订单详情扩展字符串
+    const paySign = rsaSign(`${config.AppID}\n${timestamp}\n${nonceStr}\nprepay_id=${prepayId}\n`)
+    // 2. 拼接数据返回前端
+    ctx.body = {
+      code: 200,
+      data: {
+        appId: config.AppID,
+        timestamp,
+        nonceStr,
+        package: `prepay_id=${prepayId}`,
+        signType: 'RSA',
+        paySign
       }
     }
   }
