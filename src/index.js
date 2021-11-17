@@ -14,15 +14,19 @@ import path from 'path'
 import './common/Cron'
 import errorHandle from './common/ErrorHandle'
 import { run } from './common/Init'
-import { getNofityByTradeNo } from './common/WxPay'
+// import { getNofityByTradeNo } from './common/WxPay'
 import config from './config/index'
 import WebSocketServer from './config/WebSocket'
 import router from './routes/routes'
+
+// import { getOauth2AccessToken } from './common/WxOauth'
+// getOauth2AccessToken('091IO0100jM4MM1PEX2003jIsu2IO01k')
+
 const app = new Koa()
 const ws = new WebSocketServer()
 
 // "20210828004232709012623290241"
-getNofityByTradeNo('20210828004232709012623290241')
+// getNofityByTradeNo('20210828004232709012623290241')
 
 // const res = getSignHeaders('https://api.mch.weixin.qq.com/v3/pay/transactions/jsapi', 'post', {
 //   appid: config.AppID,
@@ -48,7 +52,9 @@ ws.init()
 global.ws = ws
 
 // 定义公共路径，不需要jwt鉴权
-const jwt = JWT({ secret: config.JWT_SECRET }).unless({ path: [/^\/public/, /^\/login/] })
+const jwt = JWT({ secret: config.JWT_SECRET }).unless({
+  path: [/^\/public/, /^\/login/]
+})
 
 /**
  * 使用koa-compose 集成中间件
@@ -61,7 +67,7 @@ const middleware = compose([
       keepExtensions: true,
       maxFieldsSize: 5 * 1024 * 1024
     },
-    onError: err => {
+    onError: (err) => {
       console.log('koabody TCL: err', err)
     }
   }),

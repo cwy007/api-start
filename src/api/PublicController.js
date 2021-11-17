@@ -1,4 +1,4 @@
-import sendSms from '@/common/Phone'
+// import sendSms from '@/common/Phone'
 import config from '@/config'
 import { getValue, setValue } from '@/config/RedisConfig'
 import Post from '@/model/Post'
@@ -103,8 +103,15 @@ class PublicController {
 
   // 发送手机验证码
   async sendCode (ctx) {
-  // 1.获取手机号 phone
+    // 1.获取手机号 phone
     const { mobile } = ctx.query
+    if (!mobile || !/^1[3-9]\d{9}$/.test(mobile)) {
+      ctx.body = {
+        code: 500,
+        msg: '手机号格式不正确'
+      }
+      return
+    }
     // 2.查询redis -> 判断是否验证码过期
     if (await getValue(mobile)) {
       ctx.body = {
@@ -116,7 +123,8 @@ class PublicController {
     // 3.产生随机的6位数字
     const sms = String(Math.random()).slice(-6)
     // 4.发送短信 -> 设置redis -> sms, expire -> key:phone
-    const res = await sendSms(mobile, sms)
+    // const res = await sendSms(mobile, sms)
+    const res = { result: 0 }
     if (res.result === 0) {
       setValue(mobile, sms, 10 * 60)
       // 5.响应

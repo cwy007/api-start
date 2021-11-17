@@ -1,18 +1,5 @@
 import mongoose from '@/config/DBHelpler'
-
-const rand = (len = 8) => {
-  const possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-  let text = ''
-  for (let i = 0; i < len; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length))
-  }
-  return text
-}
-
-const getTempName = () => {
-  // 返回用户邮箱
-  return 'toimc_' + rand() + '@toimc.com'
-}
+import { getTempName } from '@/common/Utils'
 
 const Schema = mongoose.Schema
 

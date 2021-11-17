@@ -7,7 +7,7 @@ class WebSocketServer {
   constructor (config = {}) {
     const defaultConfig = {
       port: configfile.wsPort,
-      timeInterval: 5 * 1000,
+      timeInterval: 120 * 1000,
       isAuth: true
     }
     // 最终配置

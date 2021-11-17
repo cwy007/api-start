@@ -1,4 +1,4 @@
-import { checkCode, generateToken } from '@/common/Utils'
+import { checkCode, generateToken, getTempName } from '@/common/Utils'
 import config from '@/config'
 import send from '@/config/MailConfig'
 import { delValue, getValue, setValue } from '@/config/RedisConfig'
@@ -11,6 +11,7 @@ import { getJWTPayload } from '../common/Utils'
 import WXBizDataCrypt from '../common/WXBizDataCrypt'
 import { wxGetOpenData, wxGetUserInfo, wxSendMessage } from '../common/WxUtils'
 import SignRecord from '../model/SignRecord'
+import { getOauth2AccessToken, getOpenDataByOpenId } from '../common/WxOauth'
 
 const addSign = async (user) => {
   const userObj = user.toJSON()
@@ -334,6 +335,74 @@ class LoginController {
       code: 200,
       token: generateToken({ _id: ctx._id }, '60m'),
       msg: '获取token成功'
+    }
+  }
+
+  // 微信扫码登录
+  async wxOauth (ctx) {
+    // 1.获取code与state
+    const { body } = ctx.request
+    const { code, state } = body
+    if (code && state) {
+      // 2.发送请求获取acess_token
+      const res = await getOauth2AccessToken(code)
+      console.log('🚀 ~ file: PublicController.js ~ line 157 ~ PublicController ~ wxOauth ~ res', res)
+      const { access_token: accessToken, openid, errcode, errmsg } = res
+      if (errmsg && errcode) {
+        ctx.body = {
+          code: 500,
+          msg: errmsg
+        }
+        return
+      }
+      // 3.redis -> refreshToken -> redis(openid&unionid)-> user信息
+      // 获取微信平台的用户信息 -> user信息
+      // 4.判断用户是否存在，如果存在，则直接返回token
+      const user = await User.findOne({ openid })
+      if (user) {
+        // 验证通过，返回Token数据
+        const userObj = await addSign(user)
+        const arr = ['password', 'username']
+        arr.forEach((item) => {
+          delete userObj[item]
+        })
+        const token = generateToken({ _id: userObj._id })
+        // 加入isSign属性
+
+        ctx.body = {
+          code: 200,
+          data: userObj,
+          token: token
+          // refreshToken
+        }
+        return
+      }
+      // 5.如果用户不存在，则调用微信的开放接口，获取用户信息，创建用户，返回token
+      const userInfo = await getOpenDataByOpenId(accessToken, openid)
+      const newUser = new User({
+        openid: userInfo.openid,
+        unionid: userInfo.unionid,
+        username: getTempName(),
+        name: userInfo.nickName,
+        roles: ['user'],
+        gender: userInfo.sex,
+        pic: userInfo.headimgurl,
+        location: `${userInfo.country}${userInfo.province}${userInfo.city}`
+      })
+      let userTemp = await newUser.save()
+      userTemp = userTemp.toJSON()
+      const arr = ['password', 'username']
+      arr.forEach((item) => {
+        delete userTemp[item]
+      })
+      const token = generateToken({ _id: userTemp._id })
+      // 加入isSign属性
+
+      ctx.body = {
+        code: 200,
+        data: userTemp,
+        token: token
+      }
     }
   }
 }

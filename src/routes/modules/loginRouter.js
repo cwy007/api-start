@@ -30,4 +30,7 @@ router.post('/getMobile', loginController.getMobile)
 // refresh
 router.post('/refresh', loginController.refresh)
 
+// 扫码登录
+router.post('/wxOauth', loginController.wxOauth)
+
 export default router
