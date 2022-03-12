@@ -1,9 +1,9 @@
 import path from 'path'
 
-const MONGO_USERNAME = process.env.DB_USER || 'test'
-const MONGO_PASSWORD = process.env.DB_PASS || 'Zlf6hfWj4nBzzP1W'
-const MONGO_HOSTNAME = process.env.DB_HOST || 'dev.toimc.com'
-const MONGO_PORT = process.env.DB_PORT || '43130'
+const MONGO_USERNAME = process.env.DB_USER || 'root'
+const MONGO_PASSWORD = process.env.DB_PASS || 'root'
+const MONGO_HOSTNAME = process.env.DB_HOST || 'localhost'
+const MONGO_PORT = process.env.DB_PORT || '27017'
 const DB_NAME = process.env.DB_NAME || 'testdb'
 
 const DB_URL = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:${MONGO_PORT}/${DB_NAME}`
@@ -11,9 +11,9 @@ const DB_URL = `mongodb://${MONGO_USERNAME}:${MONGO_PASSWORD}@${MONGO_HOSTNAME}:
 // console.log('DB_URL', DB_URL)
 
 const REDIS = {
-  host: process.env.REDIS_HOST || 'dev.toimc.com',
-  port: process.env.REDIS_PORT || 43131,
-  password: process.env.REDIS_PASS || 'OUlMsFxOSa6r77s1'
+  host: process.env.REDIS_HOST || 'localhost',
+  port: process.env.REDIS_PORT || 6379,
+  password: process.env.REDIS_PASS || 'eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81'
 }
 
 const JWT_SECRET =

@@ -1,7 +1,6 @@
 import mongoose from 'mongoose'
 import config from './index'
 
-mongoose.set('useCreateIndex', true)
 // mongoose.set('debug', true)
 
 // 创建连接
