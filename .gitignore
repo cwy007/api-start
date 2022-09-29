@@ -109,7 +109,7 @@ typings/
 # nuxt.js build output
 .nuxt
 
-# react / gatsby 
+# react / gatsby
 public/
 
 # vuepress build output
@@ -142,3 +142,5 @@ dist/
 
 
 .idea/
+
+dump.rdb
